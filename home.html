@@ -1,0 +1,217 @@
+
+<!--
+
+     3jsbot code stencil
+     Implementation of robot kinematics, control, and decision making 
+     in HTML5/JavaScript and threejs
+     
+     @author odestcj / https://github.com/odestcj
+
+     Forgive my coding style.  I am still a typedef struct kind of guy.
+     Need to get a handle on all of the global variables... in the future.
+-->
+
+<html>
+
+<body>
+
+<!-- //////////////////////////////////////////////////
+     /////     JAVASCRIPT INCLUDES
+     ////////////////////////////////////////////////// -->
+
+<!-- threejs - https://github.com/mrdoob/three.js/ - for 3D rendering -->
+<script src="js/three.min.js"></script>
+
+<!-- threejs camera controls helpers -->
+<script src="js/TrackballControls.js"></script>
+<script src="js/OrbitControls.js"></script>
+
+<!-- threejs keyboard input helper -->
+<script src="js/THREEx.KeyboardState.js"></script>
+
+<!-- numericjs - https://github.com/sloisel/numeric - for matrix inversion -->
+<script src="js/numeric-1.2.6.js"></script>
+
+<!-- definition of robot kinematics -->
+<!-- CS148: change this script pointer to change the robot definition -->
+<!--
+<script src="robots/robot_urdf_example.js"></script> 
+<script src="robots/robot_crawler.js"></script> 
+-->
+<script src="robots/robot_br2.js"></script> 
+ 
+<!-- 3jsbot includes -->
+<script src="3jsbot.js"></script> 
+<!--
+<script src="3jsbot_forward_kinematics.js"></script> 
+<script src="3jsbot_controls.js"></script> 
+<script src="3jsbot_pd_control.js"></script> 
+<script src="3jsbot_inverse_kinematics.js"></script> 
+<script src="3jsbot_potential_field.js"></script> 
+<script src="3jsbot_rrt_connect.js"></script> 
+<script src="3jsbot_matrix.js"></script> 
+<script src="3jsbot_quaternion.js"></script> 
+-->
+<script src="3jsbot_threejs.js"></script> 
+<script src="3jsbot_userinput.js"></script> 
+
+<script>
+
+//////////////////////////////////////////////////
+/////     MAIN FUNCTION CALLS
+//////////////////////////////////////////////////
+
+// 3jsbot uses init() to initialize threejs scene, user input, and robot kinematics
+// CS148: you should use my_init() instead
+init();
+
+// 3jsbot uses animate() as the main animation loop maintained by threejs 
+// CS148: you should use my_animate() instead
+animate();
+
+
+
+// CS148: my_animate is where your robot's controls and movement are updated over time
+function my_init() {
+
+    init_robot();  // initialize robot kinematics
+
+}
+
+
+function init_robot() {
+        
+    // ASSUME: robot kinematics are described separate js file (eg., "robot_urdf_example.js")
+
+    // initialize and create threejs mesh objects for robot links
+    init_robot_links();
+
+    // initialize robot joints and create threejs mesh objects for robot joints and form kinematic hiearchy
+    init_robot_joints();
+
+    // initialize inverse kinematics target location 
+    ik_target = [[0],[0.8],[1.0],[1]];
+
+}
+
+// CS148: nothing to add here 
+function init_robot_links() {
+
+    for (x in robot.links) {
+        robot.links[x].name = x;
+    }
+
+    // CS148: do not remove, this is used to create threejs geometries
+    init_robot_links_geoms();
+
+    // initialize controls for robot base link
+    robot.control = {xyz: [0,0,0], rpy:[0,0,0]}; 
+}
+
+
+// CS148: add kinematic hierarchy in this function
+function init_robot_joints() {
+    // build kinematic hierarchy by looping over each joint in the robot
+    //   (object fields can be index through array-style indices, object[field] = property)
+    //   and insert threejs scene graph (each joint and link are directly connect to scene root)
+    // NOTE: kinematic hierarchy is maintained independently by this code, not threejs
+    // NOTE: simpleApplyMatrix can be used to set threejs transform for a rendered object
+
+    var x,tempmat;
+
+    for (x in robot.joints) {
+
+        // give the joint its name as an id
+        robot.joints[x].name = x;
+        console.log(robot.joints[x].child); // to print the child link of joints for example
+
+        // CONSTRUCT KINEMATIC HIERARCHY
+    }
+
+    // CS148: do not remove, this is used to create threejs geometries
+    init_robot_joints_geoms();
+}
+
+
+
+//////////////////////////////////////////////////
+/////     ANIMATION AND INTERACTION LOOP
+//////////////////////////////////////////////////
+
+// CS148: my_animate is where your robot's controls and movement are updated over time
+function my_animate() {
+
+    // INITIAL GETTING FAMILIAR CODE
+    var jsmat = [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1] 
+    ];
+
+    var spacing = 0.9;
+    jsmat[1][3] = 2;
+    jsmat[0][3] = -Object.keys(robot.joints).length*spacing/2;
+    for (x in robot.joints) {
+        threemat = matrix_2Darray_to_threejs(jsmat);
+        simpleApplyMatrix(robot.joints[x].geom,threemat);
+        jsmat[0][3] += spacing;
+    } 
+
+    var spacing = 0.9;
+    jsmat[1][3] = 1;
+    jsmat[0][3] = -Object.keys(robot.joints).length*spacing/2;
+    for (x in robot.links) {
+        threemat = matrix_2Darray_to_threejs(jsmat);
+        simpleApplyMatrix(robot.links[x].geom,threemat);
+        jsmat[0][3] += spacing;
+    } 
+
+
+    // ROBOT DYNAMICS 
+
+    // apply robot controls to robot configuration (assuming pure kinematics for now)
+    //robot_apply_controls();
+
+    // DRAW ROBOT 
+
+    // forward kinematics over robot links
+    //robot_forward_kinematics();
+
+    // HANDLE USER CONTROLS
+
+    // handle user input 
+    user_input();
+
+    // UPDATE AUTONOMOUS CONTROLS 
+
+    // proportional-derivative control 
+    /*
+    if (update_pd)
+        robot_pd_control();
+    update_pd = false;
+    */
+
+    // inverse kinematics
+    //robot_inverse_kinematics(ik_target, "forearm_right_yaw", ik_local);
+
+    // configuration space motion planning
+    //robot_rrt_connect(q_desired);
+
+    // Monte Carlo Localization (needs display map and simulated range sensing)
+    // if we have time this semester
+    //robot_potential_field(x_desired);
+
+    // potential field navigation (needs display_map for collisions)
+    // if we have time this semester
+    //robot_potential_field(x_desired);
+
+
+}
+
+
+
+</script>
+</body>
+</html>
+
