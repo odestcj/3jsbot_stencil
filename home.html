@@ -76,6 +76,44 @@ function my_init() {
 
     init_robot();  // initialize robot kinematics
 
+    // CS148: INITIAL GETTING FAMILIAR CODE  (START HERE)
+
+    var local_spacing = 0.9;  // variables declared with "var" are local 
+    global_spacing = 0.9;  // variables declared with "var" are global
+
+    my_object = {};  // objects can be created with braces
+    my_object.university = "Brown";  // create object property with an assignment
+    my_object.course_number = 148;  
+    my_object["subject"] = "robotics";  
+    if (typeof copied_object === 'undefined') {  // if my_object does not already exist
+        console.log(my_object);  // check it out on the console  
+    }
+
+    // objects are copied by reference
+    copied_object = my_object;
+    copied_object.subject = "autonomous_robotics";  // what is my_object.subject on the console?
+
+    my_array = [8, 6, 7, 5, 3, 0, 9]; 
+    my_array[6] = 'ni-i-i-ine';
+    var i;  // local variable
+    for (i=0;i<my_array.length;i++) {
+        console.log(my_array[i]);
+    }
+
+    textbar = document.createElement('div');
+    textbar.style.position = 'absolute';
+    //textbar.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+    textbar.style.width = window.innerWidth-10;
+    textbar.style.height = 20;
+    textbar.style.backgroundColor = "black";
+    textbar.style.color = "#00ff00";
+    textbar.innerHTML = "Welcome to 3jsbot. I want to see some text. Too much coffee?";
+    textbar.style.top = 10 + 'px';
+    textbar.style.left = 10 + 'px';
+    document.body.appendChild(textbar);
+
+    // CS148: INITIAL GETTING FAMILIAR CODE  (END HERE)
+
 }
 
 
@@ -141,7 +179,19 @@ function init_robot_joints() {
 // CS148: my_animate is where your robot's controls and movement are updated over time
 function my_animate() {
 
-    // INITIAL GETTING FAMILIAR CODE
+    // CS148: INITIAL GETTING FAMILIAR CODE  (START HERE)
+
+    // keyboard is threejs helper for reading keyboard state
+    if (keyboard.pressed("x")) 
+        textbar.innerHTML = "moving up";  // make the pieces move up
+    else if (keyboard.pressed("z")) 
+        textbar.innerHTML = "zzzzzz";  // stop jittering the pieces
+    else {
+        // make the pieces jitter, and say something interesting
+    }
+
+    // jsmat is how we will represent matrices with index notation
+    // such that matrix[row][column] is the indexing
     var jsmat = [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
@@ -149,25 +199,31 @@ function my_animate() {
                 [0, 0, 0, 1] 
     ];
 
-    var spacing = 0.9;
-    jsmat[1][3] = 2;
-    jsmat[0][3] = -Object.keys(robot.joints).length*spacing/2;
+    var spacing = 0.9;  // variables declared with "var" are local 
+
+    // dirty way to get number of keys in an object
+    jsmat[0][3] = -Object.keys(robot.joints).length*spacing/2;  
     for (x in robot.joints) {
-        threemat = matrix_2Darray_to_threejs(jsmat);
+        jsmat[1][3] = 2+Math.random()*0.02;  // Math object has lots of helpful functions
+        jsmat[2][3] = Math.random()*0.02;
+        threemat = matrix_2Darray_to_threejs(jsmat); 
         simpleApplyMatrix(robot.joints[x].geom,threemat);
         jsmat[0][3] += spacing;
     } 
 
-    var spacing = 0.9;
-    jsmat[1][3] = 1;
     jsmat[0][3] = -Object.keys(robot.joints).length*spacing/2;
     for (x in robot.links) {
+        jsmat[1][3] = 1+Math.random()*0.02;
+        jsmat[2][3] = Math.random()*0.02;
         threemat = matrix_2Darray_to_threejs(jsmat);
         simpleApplyMatrix(robot.links[x].geom,threemat);
         jsmat[0][3] += spacing;
     } 
 
 
+    // CS148: INITIAL GETTING FAMILIAR CODE  (END)
+
+ 
     // ROBOT DYNAMICS 
 
     // apply robot controls to robot configuration (assuming pure kinematics for now)
