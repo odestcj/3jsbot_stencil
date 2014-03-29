@@ -1,0 +1,250 @@
+<!--
+
+     Rapidly-exploring Random Tree example stencil
+     in HTML5 Canvas
+     based on RRT and RRT-Connect algorithms by Kuffner and LaValle (2000)
+     
+     @author odestcj / https://github.com/odestcj
+
+     Forgive my coding style.  I am still a typedef struct kind of guy
+     with a noticeable disregard for proper scoping
+
+     Reference code includes functions for:
+
+         rrt_planning_iteration
+         tree_init
+         tree_add_vertex
+         tree_add_edge
+         random_config
+         nearest_neighbor
+         find_path
+         path_dfs
+         new_config
+         rrt_extend
+         rrt_connect
+
+    Note: provided drawing routines scales world by 100 for rendering
+
+-->
+
+<html>
+
+<body onload="init()">
+
+<!-- //////////////////////////////////////////////////
+     /////     JAVASCRIPT INCLUDES
+     ////////////////////////////////////////////////// -->
+
+<script>
+
+//////////////////////////////////////////////////
+/////     MAIN FUNCTION CALLS
+//////////////////////////////////////////////////
+
+// initialize threejs scene, user input, and robot kinematics
+init();
+
+// main animation loop maintained by threejs 
+animate();
+
+
+//////////////////////////////////////////////////
+/////     INITIALIZATION FUNCTION DEFINITONS
+//////////////////////////////////////////////////
+
+function init() {
+
+    // create textbar for user output 
+    textbar = document.createElement('div');
+    textbar.style.position = 'absolute';
+    //textbar.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+    textbar.style.width = window.width-10;
+    textbar.style.height = 20;
+    textbar.style.backgroundColor = "black";
+    textbar.style.color = "#00ff00";
+    textbar.innerHTML = "hi there!";
+    textbar.style.top = 10 + 'px';
+    textbar.style.left = 10 + 'px';
+    document.body.appendChild(textbar);
+
+
+    // specify start and goal configurations
+    q_start_config = [0,0];
+    q_goal_config = [4,4];
+    q_init = q_start_config;
+    q_goal = q_goal_config;
+
+    // flag to continue rrt iterations
+    rrt_iterate = true;
+    rrt_iter_count = 0;
+
+    // set the world for the planner (stored as "range" global variable)
+    set_planning_scene();
+
+    // make sure the rrt iterations are not running faster than animation update
+    cur_time = Date.now();
+
+
+}
+
+
+//////////////////////////////////////////////////
+/////     ANIMATION AND INTERACTION LOOP
+//////////////////////////////////////////////////
+
+function animate() {
+
+    // alternative to using setInterval for updating in-browser drawing
+    // this effectively request that the animate function be called again for next draw
+    // http://learningwebgl.com/blog/?p=3189
+    requestAnimationFrame( animate );
+
+    draw_robot_world();
+
+    // specify rrt algorithm to use for planning
+    rrt_alg = 1;  // 0: basic rrt, 1: rrt_connect
+
+    // make sure the rrt iterations are not running faster than animation update
+    if (rrt_iterate && (Date.now()-cur_time > 10)) {
+
+        //rrt_planning_iteration();
+
+        // update time marker for last iteration update
+        cur_time = Date.now();
+
+   }
+
+}
+
+
+//////////////////////////////////////////////////
+/////     CANVAS DRAWING SUPPORT ROUTINES
+//////////////////////////////////////////////////
+
+function draw_robot_world() {
+
+    // draw start and goal configurations
+    c = document.getElementById("myCanvas");
+    ctx = c.getContext("2d");
+    ctx.fillStyle = "#0000FF";
+    ctx.fillRect((q_init[0]*100+200)-5,(q_init[1]*100+200)-5,10,10);
+    ctx.fillStyle = "#00FF00";
+    ctx.fillRect((q_goal[0]*100+200)-5,(q_goal[1]*100+200)-5,10,10);
+
+    // draw robot's world
+    for (j=0;j<range.length;j++) { 
+        ctx.fillStyle = "#FF0000";
+        ctx.fillRect((range[j][0][0]*100+200),(range[j][1][0]*100+200),(range[j][0][1]-range[j][0][0])*100,(range[j][1][1]-range[j][1][0])*100);
+    }
+ 
+}
+
+function draw_2D_configuration(q) {
+    // draw location of 2D configuration on canvas
+    c = document.getElementById("myCanvas");
+    ctx = c.getContext("2d");
+    ctx.fillStyle = "#8888AA";
+    ctx.fillRect((q[0]*100+200)-3,(q[1]*100+200)-3,6,6);
+}
+
+function draw_2D_edge_configurations(q1,q2) {
+    // draw line between locations of two 2D configurations on canvas
+    c = document.getElementById("myCanvas");
+    ctx = c.getContext("2d");
+    ctx.beginPath();
+    ctx.moveTo(q1[0]*100+200,q1[1]*100+200);
+    ctx.lineTo(q2[0]*100+200,q2[1]*100+200);
+    ctx.stroke();
+}
+
+function draw_highlighted_path(path) {
+    ctx = c.getContext("2d");
+    ctx.strokeStyle="#0000FF";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    for (i=1;i<path.length;i++) {
+        ctx.moveTo(path[i-1].vertex[0]*100+200,path[i-1].vertex[1]*100+200);
+        ctx.lineTo(path[i].vertex[0]*100+200,path[i].vertex[1]*100+200);
+    }
+    ctx.stroke();
+}
+
+//////////////////////////////////////////////////
+/////     COLLISION SUPPORT ROUTINES
+//////////////////////////////////////////////////
+
+function set_planning_scene() {
+
+    // obstacles specified as a range along [0] (x-dimension) and [1] y-dimension
+    range = []; // global variable
+
+    // world boundary
+    range[0] = [ [-1.1,5.1],[-1.1,-1] ];
+    range[1] = [ [-1.1,5.1],[5,5.1] ];
+    range[2] = [ [-1.1,-1],[-1.1,5.1] ];
+    range[3] = [ [5,5.1],[-1.1,5.1] ];
+
+/*  misc stuff with narrow opening
+*/
+    range[4] = [ [1,2],[1,2] ];
+    range[5] = [ [3,3.3],[1,4] ];
+    range[6] = [ [0.6,0.7],[0.4,0.7] ];
+    range[7] = [ [3.7,3.9],[-0.8,5] ];
+
+/*  narrow path 1
+    range[4] = [ [1,3],[4,5] ];
+    range[5] = [ [1,3],[-1,2] ];
+    range[6] = [ [1,1.95],[2,3.8] ];
+*/
+
+/*  narrow path 2
+    range[4] = [ [1,3],[4,5] ];
+    range[5] = [ [1,3],[-1,2] ];
+    range[6] = [ [1,1.9],[2,3.8] ];
+    range[7] = [ [2.1,3],[2.2,4] ];
+*/
+
+/*  three compartments
+    range[4] = [ [1,1.3],[4,5] ];
+    range[5] = [ [1,1.3],[-1,3.5] ];
+    range[6] = [ [2.7,3],[-1,0] ];
+    range[7] = [ [2.7,3],[.5,5] ];
+*/
+
+}
+
+function collision_test(q) {
+
+    var j;
+
+    // test for collision with each object
+    for (j=0;j<range.length;j++) { 
+
+        // assume configuration is in collision
+        var in_collision = true; 
+
+        // no collision detected, if configuration is outside obstacle along any dimension
+        for (i=0;i<q.length;i++) { 
+            if ((q[i]<range[j][i][0])||(q[i]>range[j][i][1]))
+                in_collision = false;
+        }
+    
+        // return collision, if configuration inside obstacle extents along all dimensions
+        if (in_collision)
+            return true;
+    }
+
+    // return no collision, if no collision detected with any obstacle
+    return false;
+}
+
+
+</script>
+
+<canvas id="myCanvas" width=800 height=800
+style="z-index: 10 ;border:1px solid #000000;">
+</canvas> 
+
+</body>
+</html>
+
