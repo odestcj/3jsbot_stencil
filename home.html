@@ -39,21 +39,36 @@
 <script src="robots/robot_crawler.js"></script> 
 -->
 <script src="robots/robot_br2.js"></script> 
+
+ <!-- definition of robot's world (ie, planning scene)  -->
+<!--
+<script src="worlds/world_empty.js"></script> 
+<script src="worlds/world_basic.js"></script> 
+<script src="worlds/world_s.js"></script> 
+<script src="worlds/world_random.js"></script> 
+<script src="worlds/world_local_minima.js"></script> 
+-->
  
 <!-- 3jsbot includes -->
 <script src="3jsbot.js"></script> 
-<!--
-<script src="3jsbot_forward_kinematics.js"></script> 
-<script src="3jsbot_controls.js"></script> 
-<script src="3jsbot_pd_control.js"></script> 
-<script src="3jsbot_inverse_kinematics.js"></script> 
-<script src="3jsbot_potential_field.js"></script> 
-<script src="3jsbot_rrt_connect.js"></script> 
-<script src="3jsbot_matrix.js"></script> 
-<script src="3jsbot_quaternion.js"></script> 
--->
 <script src="3jsbot_threejs.js"></script> 
 <script src="3jsbot_userinput.js"></script> 
+<!-- FK/drawing assignment 
+<script src="3jsbot_forward_kinematics.js"></script> 
+<script src="3jsbot_matrix.js"></script> 
+-->
+<!-- FK/joint control assignment 
+<script src="3jsbot_quaternion.js"></script> 
+<script src="3jsbot_controls.js"></script> 
+<script src="3jsbot_pd_control.js"></script> 
+-->
+<!-- IK assignment 
+<script src="3jsbot_inverse_kinematics.js"></script> 
+-->
+<!-- planning assignment 
+<script src="3jsbot_rrt_connect.js"></script> 
+<script src="3jsbot_collision.js"></script> 
+-->
 
 <script>
 
@@ -129,6 +144,17 @@ function init_robot() {
 
     // initialize inverse kinematics target location 
     ik_target = [[0],[0.8],[1.0],[1]];
+
+    /* uncomment for motion planning execution (motion planning)
+    // initialize flags for executing planner
+    generating_motion_plan = false; 
+    generate_motion_plan = false; 
+    */
+
+    /* uncomment for collision testing with world (motion planning)
+    // set scene for planner
+    robot_set_planning_scene();
+    */
 
 }
 
@@ -267,15 +293,19 @@ function my_animate() {
     //robot_inverse_kinematics(ik_target, "forearm_right_yaw", ik_local);
 
     // configuration space motion planning
-    //robot_rrt_connect(q_desired);
-
-    // Monte Carlo Localization (needs display map and simulated range sensing)
-    // if we have time this semester
-    //robot_potential_field(x_desired);
-
-    // potential field navigation (needs display_map for collisions)
-    // if we have time this semester
-    //robot_potential_field(x_desired);
+    /*
+    if ((generate_motion_plan) && (!generating_motion_plan)) {
+        robot_rrt_planner_init();
+        generating_motion_plan = true;
+        generate_motion_plan = false;
+    }
+    if (generating_motion_plan) {
+        rrt_result = robot_rrt_planner_iterate();
+        if (rrt_result === "reached") {
+            generating_motion_plan = false;
+        }
+    }
+    */
 
 
 }

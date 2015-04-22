@@ -7,6 +7,7 @@ CS148: reference code has functions for:
 
 matrix_multiply
 matrix_transpose
+matrix_pseudoinverse (assuming numeric.inv)
 vector_normalize
 vector_cross
 generate_identity
