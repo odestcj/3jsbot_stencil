@@ -77,17 +77,19 @@
 //////////////////////////////////////////////////
 
 // 3jsbot uses init() to initialize threejs scene, user input, and robot kinematics
-// CS148: you should use my_init() instead
+// CS148: do not change this function call. init() will call my_init(), where you can add your own initialization methods
 init();
 
 // 3jsbot uses animate() as the main animation loop maintained by threejs 
-// CS148: you should use my_animate() instead
+// CS148: do not change this function call. animate() will call my_animate(), where you can add your own animation methods
 animate();
 
 
 
 // CS148: my_animate is where your robot's controls and movement are updated over time
 function my_init() {
+
+    console.log(JSON.stringify(robot));  // just to see initial starting robot object
 
     init_robot();  // initialize robot kinematics
 
